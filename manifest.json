@@ -1,11 +1,27 @@
 {
   "name": "Project Github",
-  "version": "1.0",
   "manifest_version": 2,
+  "version": "1.0",
+  "description": "Google chrome extension for manage my github",
+  "icons": {
+    "128": "./src/assets/icon/github-128.png",
+    "48": "./src/assets/icon/github-48.png",
+    "16": "./src/assets/icon/github-16.png"
+  },
+  "page_action": {
+    "default_icon": "./src/assets/icon/github-48.png",
+    "default_popup": "./src/popup/index.html",
+    "default_title": "My Github"
+  },
+  "background": {
+    "scripts": ["./src/assets/js/jquery.min.js", "./src/event/page.js"],
+    "persistent": false
+  },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["./src/index.js"]
+      "matches": ["https://github.com/*"],
+      "js": ["./src/assets/js/jquery.min.js", "./src/content/index.js"]
     }
-  ]
+  ],
+  "permissions": ["tabs", "https://github.com/*"]
 }
