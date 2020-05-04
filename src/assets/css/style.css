@@ -1,0 +1,53 @@
+@import url("./bootstrap.min.css"); /* main bootstrap */
+@import url("./patch.css"); /* bootstrap path */
+
+/*  custom user css */
+
+html {
+  min-height: 25rem;
+  min-width: 20rem;
+  max-width: 50vw;
+  max-height: 75vh;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: row;
+}
+
+body > .page-loading,
+body > .login-first {
+  display: none;
+}
+
+body[isLoading],
+body[unauthorized] {
+  overflow: hidden;
+  opacity: 0.5;
+}
+
+body[isLoading] > .page-loading {
+  display: flex;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+body[unauthorized] > .login-first {
+  display: flex;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 9998;
+}
