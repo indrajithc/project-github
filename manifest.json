@@ -10,7 +10,7 @@
   },
   "page_action": {
     "default_icon": "./src/assets/icon/github-48.png",
-    "default_popup": "./src/popup/index.html",
+    "default_popup": "./src/popup/home/index.html",
     "default_title": "My Github"
   },
   "background": {

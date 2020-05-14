@@ -20,6 +20,9 @@ $(() => {
   /** ====== define global values ===== */
   const formGotoLogin = $("#goto-login");
 
+  /** actions page buttons */
+  const listFollowers = $("#list-followers");
+
 
 
 
@@ -36,6 +39,7 @@ $(() => {
     console.log(payload);
     if(payload  && payload.success) {
       $("body").removeAttr("unauthorized");
+      location.href="../terminal/index.html"
     } else {
       $("body").attr("unauthorized");
     }
@@ -46,7 +50,9 @@ $(() => {
     chrome.tabs.create({ url: "https://github.com/login" });
   }
 
-
+  listFollowers.click(()=> {
+    alert("go");
+  });
 
 
 

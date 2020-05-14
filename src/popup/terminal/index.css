@@ -1,0 +1,109 @@
+/* @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap'); */
+@import 'https://fonts.googleapis.com/css?family=Ubuntu';
+
+html, body {
+
+}
+
+body {
+ background-color: #1e1e1e;
+ /* font-family: 'VT323', monospace; */
+ font-family: 'Ubuntu', sans-serif; 
+ font-size : 12px ;
+ font-weight: 400;
+} 
+
+#terminal {
+  overflow: hidden;
+  overflow-y: auto;
+}
+
+#terminal .console {
+  width: 100%;
+  padding: 2px;
+}
+
+#terminal .console .input {
+  background: transparent;
+  border: none;
+  color: white;
+  outline: none;
+  resize: none;
+  min-height: 20px;
+}
+
+
+
+
+
+
+
+/*
+ *  STYLE 4
+ */
+
+ #terminal::-webkit-scrollbar-track  {
+  background-color: #1e1e1e;
+ }
+ 
+ #terminal::-webkit-scrollbar  {
+   width: 9px; 
+ }
+ 
+ #terminal::-webkit-scrollbar-thumb  {
+   background-color: #2d2d2d;
+   border: 0;
+ }
+/* 
+XTerm*background:        #222D31
+XTerm*foreground:        #d8d8d8
+XTerm*pointerColor:      #1ABB9B
+XTerm*faceName:          Fixed
+XTerm*faceSize:          11
+XTerm*reverseVideo:      on
+XTerm*selectToClipboard: true
+
+! special
+*.foreground:   #ffffff
+*.background:   #1e1e1e
+*.cursorColor:  #ffffff
+
+! black
+*.color0:       #5a7260
+*.color8:       #8da691
+
+! red
+*.color1:       #8f423c
+*.color9:       #eeaa88
+
+! green
+*.color2:       #bbbb88
+*.color10:      #ccc68d
+
+! yellow
+*.color3:       #f9d25b
+*.color11:      #eedd99
+
+! blue
+*.color4:       #e0ba69
+*.color12:      #c9b957
+
+! magenta
+*.color5:       #709289
+*.color13:      #ffcbab
+
+! cyan
+*.color6:       #d13516
+*.color14:      #c25431
+
+! white
+*.color7:       #efe2e0
+*.color15:      #f9f1ed
+
+*fading:                          8
+*fadeColor:                       black
+*pointerColorBackground:          #2b2c2b
+*pointerColorForeground:          #16a085
+
+*/
+
