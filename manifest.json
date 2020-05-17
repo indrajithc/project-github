@@ -23,5 +23,8 @@
       "js": ["./src/assets/js/jquery.min.js", "./src/content/index.js"]
     }
   ],
-  "permissions": ["tabs", "https://github.com/*"]
+  "web_accessible_resources": [
+      "./src/resource/*.js"
+  ],
+  "permissions": ["tabs", "https://github.com/*", "storage", "unlimitedStorage"]
 }
