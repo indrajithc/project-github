@@ -1,4 +1,6 @@
 {
   "clear" : "clear console",
-  "history" : "show history"
+  "history" : "show history",
+  "profile" : "load profile page",
+  "followers" : "load follower tab"
 }

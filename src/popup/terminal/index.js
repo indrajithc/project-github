@@ -5,14 +5,14 @@ $(() => {
   * @param {Any} payload
   * @param {String} dir
   */
- const responseHandler = (key, payload = null, dir = "TOC", runtime = false) => {
+ const responseHandler = (key, payload = null, callback = null,  dir = "TOC", runtime = false) => {
    if( runtime) {
     try {
-      chrome.runtime.sendMessage({ key, payload, dir });
+      chrome.runtime.sendMessage({ key, payload, dir }, callback);
     } catch (error) { }
   } else  {
      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-       chrome.tabs.sendMessage(tabs[0].id, { key, payload, dir });
+       chrome.tabs.sendMessage(tabs[0].id, { key, payload, dir }, callback);
      });
    }
   }  
@@ -28,6 +28,9 @@ $(() => {
   let lastInput = defaultText;
   const localHistory = [];
   let currentHistoryIndex = 0;
+  const authorization = {};
+  const isProgress = { active: false, infinite: true, message:"", progress : 100, payload: {}}; 
+  const localFollowersList = [];
 
   /** ====== define global values ===== */
   const formGotoLogin = $("#goto-login");
@@ -52,13 +55,16 @@ $(() => {
       $("body").removeAttr("isLoading");
     }
   }
-
+  /**
+   * This function is used to authenticate
+   * @param {Object} payload 
+   */
   const authenticate = (  payload) => {
-    console.log(payload);
     if(payload  && payload.success) {
       $("body").removeAttr("unauthorized");
       if( payload.userId) {
         defaultText = defaultText.replace("user", payload.userId);
+        authorization.username = payload.userId;
         setInputToDefault();
       }
     } else {
@@ -67,9 +73,105 @@ $(() => {
     }
   }
   
+  /**
+   * This function is used to set input to default
+   */
   const setInputToDefault = () => {
     consoleInput.val( defaultText);
   } 
+
+  /**
+   * This function is used to clear progress
+   */
+  const clearProgress = () => {
+    consoleInput.prop("readonly", false);
+    window.clearInterval( isProgress.interval);
+    isProgress.active = false;
+    isProgress.interval = null;
+    isProgress.payload = null;
+    isProgress.message = null;
+    isProgress.loadingAmin = null;
+    consoleInput.removeAttr("loading");
+    setInputToDefault();
+  }
+
+  /**
+   * This method is used to show progress
+   */
+  const showProgress = () => {
+    isProgress.interval = setInterval( () => {
+      const hasAttr = consoleInput.attr('loading');
+      if (typeof hasAttr !== typeof undefined && hasAttr !== false) {
+        consoleInput.prop("readonly", false);
+      } else { 
+        consoleInput.prop("readonly", true);
+        consoleInput.attr("loading", true);
+      }
+      if(isProgress.infinite){
+        const loadingAnimArr = ["\\", "|", "/", "-", "\\", "|", "/", "-"];
+        let c = isProgress.loadingAmin || 0; 
+        c = c>= (loadingAnimArr.length) ? 0 : c;
+        const progressText = `${defaultText} ${loadingAnimArr[c]} \t ${isProgress.message || ""}`
+        consoleInput.val(progressText);
+        isProgress.loadingAmin = c+1;
+      } else {
+        const inputDiv = consoleInput[0];
+        if( inputDiv) {
+          let progress =  Math.min(100, isProgress.progress) / 100 ;
+          let totalLetters = (inputDiv.offsetWidth -( defaultText.length * 8)) / 10;
+          totalLetters = parseInt(totalLetters );
+          let loading = ""; 
+          for( let k =0; k<= totalLetters; k++) {
+            if( k <= Math.floor(totalLetters * progress))
+            loading = `${loading}█`;
+            else 
+            loading = `${loading}▁`;
+          } 
+          consoleInput.val(`${defaultText}${loading}\t${Math.floor(progress*100)}%`);
+        }
+      }
+    },100);
+  }
+
+  /**
+   * This function is used to show loading on console
+   * @param {Boolean} active 
+   * @param {Object} payload 
+   * @param {Boolean} infinite 
+   * @param {Number} progress 
+   */
+  const setLoading = (active, payload= null, message = null, progress = 0 , infinite = true) => {
+    isProgress.active = active;
+    isProgress.infinite = infinite;
+    isProgress.progress = progress;
+    isProgress.payload = payload;
+    isProgress.message = message;
+    if( isProgress.interval ) {
+      if( !active) {
+        clearProgress();
+      }
+    } else {
+      if( active && !isProgress.interval ) {
+        showProgress();
+      }
+    }
+  }
+  setLoading.active = ( active) => {
+    isProgress.active = active;
+    if(!active) {
+      clearProgress();
+    }
+  }
+  setLoading.progress = ( progress) => {
+    isProgress.progress = progress;
+  }
+  setLoading.message = ( message) => {
+    isProgress.message = message;
+  }
+
+  const consoleLoading = () => {
+
+  }
 
   /**
    * This method is used to resize the text area
@@ -83,14 +185,24 @@ $(() => {
     }
   }
 
+  /**
+   * This function runs in all events both enter and key press
+   */
   const allEventMonitor = ()=> {
     currentHistoryIndex = 0;
   }
 
+  /**
+   * This function is used to scroll to bottom 
+   */
   const scrollToBottom = () => {
     setTimeout( o => {terminal[0].scrollTop = terminal[0].scrollHeight;}, 0);
   }
 
+  /**
+   * This function monitors enter key event
+   * @param {Event} event 
+   */
   const enterMonitor = (event) => {
     scrollToBottom();
     if(event.which === 13) {
@@ -111,12 +223,19 @@ $(() => {
     event.stopPropagation();
   });
 
+  /**
+   * This function used to output to console
+   * @param {String/Element} output 
+   */
   const setOutPut = (output) => {
-    const eachActions = `<p class="d-block w-100 m-0 p-0">${output}</p>`;
+    const eachActions = `<p class="d-block w-100 m-0 p-0" style="white-space: pre-wrap;">${output}</p>`;
     consoleOutput.append( eachActions);
     scrollToBottom();
   }
 
+  /**
+   * This function used for showing help
+   */
   const showHelp = () => {
     readFile("resource/help.json").then( (response, error) => {
       if(error) {
@@ -136,12 +255,19 @@ $(() => {
     });
   }
 
+  /**
+   * This function used to clear history
+   */
   const clearHistory = (  ) => {       
       storageSet( { history : [] },()=> {
         setOutPut("history cleared.");
     }); 
 }
 
+/**
+ * This function used to set history
+ * @param {String} command 
+ */
   const setHistory = ( command ) => {
     localHistory.push(command);
      storageGet(['history'], (response)=> {
@@ -157,6 +283,9 @@ $(() => {
   })
 }
 
+/**
+ * This function used to show console history
+ */
   const showHistory  = () => {
     storageGet(['history'], (response)=> {
       const history = response.history
@@ -172,6 +301,10 @@ $(() => {
     });
   }
 
+  /**
+   * This function is used to show prev or next command form history
+   * @param {Number} direction 
+   */
   const showHistoryInInput = ( direction)=> {
     currentHistoryIndex += direction;
     if( currentHistoryIndex <= localHistory.length){
@@ -181,6 +314,156 @@ $(() => {
     }
   }
 
+  /**
+   * This function is used to open profile 
+   */
+  const goToProfile = ( message) => new Promise( ( resolve)=>{
+    { 
+      setLoading(true,  {
+        key: "PAGE_READY",
+        callback: resolve,
+        callbackKey: "GOTO_PROFILE"
+      }, message || "loading page ..." );
+      try {
+        responseHandler("GOTO_PROFILE", { 
+          username: authorization.username
+        }, o=> {
+          if(o){ 
+            clearProgress();
+            setOutPut("Already in profile");
+            resolve(o);
+          }
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  });
+
+  const gotoFollowers = ( message) => new Promise( ( resolve)=>{
+    {  
+      setLoading(true,  {
+        key: "PAGE_READY",
+        callback: resolve,
+        callbackKey: "GOTO_FOLLOWERS"
+      }, message || "loading followers list ..." );
+      try {
+        responseHandler("GOTO_FOLLOWERS", { 
+          username: authorization.username
+        }, o=> {
+          if(o){ 
+            clearProgress();
+            setOutPut("Already in followers");
+            resolve(o);
+          }
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  });
+
+  /**
+   * This function is used to run profile commands
+   * @param {String} command 
+   */
+  const profileActions = async ( command ) => {
+    const spitCommand = command.split(" ");
+    const loadProfileResponse = await goToProfile ();
+    if( !loadProfileResponse) {
+      setOutPut("Something went wrong.");
+      return;
+    }
+    if( command.indexOf("followers") > -1) {
+      followersActions();
+    }
+   
+    console.log(command);
+  }
+
+  const startListing = ( message) => new Promise( ( resolve)=>{
+    const responseManger = (o)=> {
+      if(o){ 
+        setLoading(true, null, message || "listing followers ..." );
+        resolve(o);
+      }
+    }
+      try {
+        responseHandler("LIST_FOLLOWERS", { 
+          username: authorization.username
+        }, responseManger);
+      } catch (error) {
+        console.error(error);
+        resolve(false);
+      } 
+  });
+
+  /**
+   * This function is used to list followers
+   */
+  const listFollowers = async() => {
+    const listResponse = await startListing();
+    console.log( listResponse);
+  };
+
+  const listingFollowers = (payload, response ) => {
+    if(payload && payload.success ) {
+      const {  data, hasMore } = payload;
+      console.log(data);
+      if( Array.isArray(data)) {
+        data.forEach( each => {
+          localFollowersList.push( each );
+        });
+      }
+      const currentCount = localFollowersList.length;
+      if( hasMore) { 
+
+        if(response){
+          response( true);
+        }
+        
+        const callback = () => {
+          console.log("called callback");
+          try {
+            responseHandler("LIST_FOLLOWERS", { 
+              username: authorization.username
+            });
+          } catch (error) {
+            console.error(error);
+            resolve(false);
+          } 
+        }
+
+        setLoading(true,  {
+          key: "PAGE_READY",
+          callback,  
+          callbackKey: "LIST_FOLLOWERS",
+        }, `loading from ${currentCount+1} user ...` );
+  
+      }
+
+    }
+  }
+
+  /**
+   * This function is used to run followers commands
+   * @param {String} command 
+   */
+  const followersActions = async ( command ) => {
+    const spitCommand = command.split(" ");
+    const loadFollowersResponse = await gotoFollowers ();
+    if( !loadFollowersResponse ) {
+      setOutPut("Something went wrong.");
+      return;
+    } 
+
+    if( command.indexOf(" list") > -1 || command.indexOf(" -l") > -1) {
+      const listFollowersResponse = await listFollowers();
+
+    } 
+   
+    console.log(loadFollowersResponse);
+  }
 
   const doTheAction = ( command ) => {
     command = command.replace(defaultTextRegx, "");
@@ -192,16 +475,23 @@ $(() => {
     switch( command){
       case "clear" : 
         consoleOutput.html("");
-        case "help" : 
+        break;
+      case "help" : 
           showHelp();
         break;
-        case "history" : 
+      case "history" : 
         showHistory();
         break;
-        case "history -c":
-        case "history --clear":
-          clearHistory();
-          break;
+      case "history -c":
+      case "history --clear":
+        clearHistory();
+        break;
+      case String(command.match(/^profile*/) && command):
+        profileActions( command);
+        break;
+      case String(command.match(/^followers*/) && command):
+        followersActions( command);
+        break;
       default : 
         output = `git: ${command}: command not found`
     }
@@ -240,15 +530,23 @@ $(() => {
       enterMonitor(event);
     }
   });
-
+  
+  $(document).on('keydown', function ( e ) {
+    // You may replace `c` with whatever key you want
+    if ((e.metaKey || e.ctrlKey) && ( String.fromCharCode(e.which).toLowerCase() === 'c') ) {
+      let currentInput = consoleInput.val();
+      setOutPut(currentInput);
+      clearProgress();
+    }
+  });
   consoleInput.keypress((event)=> {
-    if(event ) { 
+    if(event  && !isProgress.active) { 
       enterMonitor(event);
     }
   });
-
+  
   consoleInput.keydown((event)=> {
-    if(event ) { 
+    if(event && !isProgress.active) { 
        if( event.which === 37 || event.which === 40) {
           showHistoryInInput( -1);
           event.preventDefault();
@@ -260,7 +558,7 @@ $(() => {
   });
 
   
-
+  
  
 
 
@@ -272,13 +570,58 @@ $(() => {
 
  
 
+
+  const contentScriptReady = ( payload, payloadKey ) => {
+    console.warn( payload);
+    if( isProgress.active && isProgress.payload) {
+      if( isProgress.payload.key === payloadKey ){
+        if( isProgress.payload.callback && isProgress.payload.callbackKey ) {
+          switch ( isProgress.payload.callbackKey) {
+            case "GOTO_PROFILE":
+              responseHandler(isProgress.payload.callbackKey, { 
+                username: authorization.username
+              }, o=> {
+                if(o){ 
+                  setOutPut("Profile is ready");
+                  isProgress.payload.callback(true);
+                  clearProgress();
+                }
+              });
+            break;
+            case "GOTO_FOLLOWERS":
+              responseHandler(isProgress.payload.callbackKey, { 
+                username: authorization.username
+              }, o=> {
+                if(o){ 
+                  setOutPut("followers is ready");
+                  isProgress.payload.callback(true);
+                  clearProgress();
+                }
+              });
+            break;
+            case "LIST_FOLLOWERS":
+              isProgress.payload.callback(true);
+            break;
+
+            
+
+          }
+        }
+      }
+    }
+  }
 
    /**============================================================================================================================= */
    const requestHandler = ( key, payload, response) => {
     switch( key) { 
       case "AUTHENTICATION" : 
-      authenticate(  payload);
-      break;
+        authenticate(  payload);
+        break;
+      case "PAGE_READY":
+        contentScriptReady( payload, key);
+        break;
+      case "LIST_FOLLOWERS":
+        listingFollowers(payload, response);
       default: 
       console.log("no valid key match");
     } 
