@@ -19,6 +19,7 @@ $(() => {
 
   const doc = $(document);
   const readFile = window.readFile || null;
+  const Queue = new window.Queue();
   const storageSet = window.storageSet;
   const storageGet = window.storageGet;
 
@@ -318,7 +319,7 @@ $(() => {
    * This function is used to open profile 
    */
   const goToProfile = ( message) => new Promise( ( resolve)=>{
-    { 
+    {  
       setLoading(true,  {
         key: "PAGE_READY",
         callback: resolve,
@@ -440,6 +441,8 @@ $(() => {
           callbackKey: "LIST_FOLLOWERS",
         }, `loading from ${currentCount+1} user ...` );
   
+      } else {
+        setLoading();
       }
 
     }
@@ -459,6 +462,7 @@ $(() => {
 
     if( command.indexOf(" list") > -1 || command.indexOf(" -l") > -1) {
       const listFollowersResponse = await listFollowers();
+      console.log(listFollowersResponse);
 
     } 
    
