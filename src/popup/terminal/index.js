@@ -32,7 +32,8 @@ $(() => {
   const authorization = {};
   const isProgress = { active: false, infinite: true, message: "", progress: 100, payload: {} };
   const localFollowersList = [];
-  const rootUrl =`https://github.com`;
+  const rootUrl = `https://github.com`;
+  const localFollowingList = [];
 
   /** ====== define global values ===== */
   const formGotoLogin = $("#goto-login");
@@ -424,6 +425,25 @@ $(() => {
     }
   });
 
+
+  const startListingFollowing = (message) => new Promise((resolve) => {
+    const responseManger = (o) => {
+      if (o) {
+        setLoading(true, null, message || "listing followers ...");
+        resolve(o);
+      }
+    }
+    try {
+      responseHandler("LIST_FOLLOWING", {
+        username: authorization.username
+      }, responseManger);
+    } catch (error) {
+      console.error(error);
+      resolve(false);
+    }
+  });
+
+
   /**
    * This function is used to show followers 
    */
@@ -438,20 +458,20 @@ $(() => {
           const userImage = current ? current.image : null;
           const userUsername = current ? current.username : null
           const userName = (current && current.name) || userUsername;
-          const hasFollowing = !! (current && current.status);
+          const hasFollowing = !!(current && current.status);
           users.push(`<span class="pl-1 pb-1 d-flex">
           <div class="media w-100 mr-1">`+ (userImage ?
-            `<img src="${userImage}" width="33px" height="33px" class="align-self-start mr-1" alt="${userName}"> `: "")+
+              `<img src="${userImage}" width="33px" height="33px" class="align-self-start mr-1" alt="${userName}"> ` : "") +
             `<div class="media-body d-flex flex-column"> 
               <span class="pr-1 d-flex w-100 font-weight-bold">${userName} 
               `+ (hasFollowing ? (
-                `<span class="text-success">
+              `<span class="text-success">
                 <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-check2" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path fill-rule="evenodd" d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
               </svg>
               </span>`
-              ) : "")+`
-              <span class="mt-auto ml-auto badge small badge-pill badge-light">${o+1}</span>
+            ) : "") + `
+              <span class="mt-auto ml-auto badge small badge-pill badge-light">${o + 1}</span>
               </span>
               <small><a href="${rootUrl}/${userUsername}" target="_blank">${userUsername}</a></small>
             </div>
@@ -471,6 +491,14 @@ $(() => {
    */
   const listFollowers = async () => {
     const listResponse = await startListing();
+    console.log(listResponse);
+  };
+
+  /**
+   * This function is used to list followers
+   */
+  const listFollowing = async () => {
+    const listResponse = await startListingFollowing();
     console.log(listResponse);
   };
 
@@ -516,6 +544,50 @@ $(() => {
     }
   }
 
+
+  const listingFollowings = (payload, response) => {
+    if (payload && payload.success) {
+      const { data, hasMore } = payload;
+      console.log(data);
+      if (Array.isArray(data)) {
+        data.forEach(each => {
+          localFollowingList.push(each);
+        });
+      }
+      const currentCount = localFollowingList.length;
+      if (hasMore) {
+
+        if (response) {
+          response(true);
+        }
+
+        const callback = () => {
+          console.log("called callback");
+          try {
+            responseHandler("LIST_FOLLOWING", {
+              username: authorization.username
+            });
+          } catch (error) {
+            console.error(error);
+            resolve(false);
+          }
+        }
+
+        setLoading(true, {
+          key: "PAGE_READY",
+          callback,
+          callbackKey: "LIST_FOLLOWING",
+        }, `loading from ${currentCount + 1} user ...`);
+
+      } else {
+        setLoading();
+        setOutPut(`found ${currentCount} following users`);
+      }
+
+    }
+  }
+
+
   /**
    * This function is used to run followers commands
    * @param {String} command 
@@ -528,14 +600,14 @@ $(() => {
       return;
     }
 
-    // if (command.indexOf(" list") > -1 || command.indexOf(" -l") > -1) {
-    //   const listFollowersResponse = await listFollowers();
-    //   console.log(listFollowersResponse);
-    // }
+    if (command.indexOf(" list") > -1 || command.indexOf(" -l") > -1) {
+      const listFollowersResponse = await listFollowers();
+      console.log(listFollowersResponse);
+    }
 
-    // if (command.indexOf("show") > -1 || command.indexOf(" -s") > -1) {
-    //   showFollowers();
-    // }
+    if (command.indexOf("show") > -1 || command.indexOf(" -s") > -1) {
+      showFollowers();
+    }
 
     console.log(loadFollowersResponse);
   }
@@ -555,13 +627,13 @@ $(() => {
     }
 
     if (command.indexOf(" list") > -1 || command.indexOf(" -l") > -1) {
-      const listFollowersResponse = await listFollowers();
-      console.log(listFollowersResponse);
+      const listFollowingResponse = await listFollowing();
+      console.log(listFollowingResponse);
     }
 
-    if (command.indexOf("show") > -1 || command.indexOf(" -s") > -1) {
-      showFollowers();
-    }
+    // if (command.indexOf("show") > -1 || command.indexOf(" -s") > -1) {
+    //   showFollowers();
+    // }
 
     console.log(loadFollowersResponse);
   }
@@ -590,9 +662,9 @@ $(() => {
       case String(command.match(/^profile*/) && command):
         profileActions(command);
         break;
-        case String(command.match(/^followers*/) && command):
-          followersActions(command);
-          break;
+      case String(command.match(/^followers*/) && command):
+        followersActions(command);
+        break;
       case String(command.match(/^following*/) && command):
         followingActions(command);
         break;
@@ -741,6 +813,9 @@ $(() => {
         break;
       case "LIST_FOLLOWERS":
         listingFollowers(payload, response);
+        break;
+      case "LIST_FOLLOWING":
+        listingFollowings(payload, response);
       default:
         console.log("no valid key match");
     }
