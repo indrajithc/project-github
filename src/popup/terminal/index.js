@@ -34,6 +34,7 @@ $(() => {
   const localFollowersList = [];
   const rootUrl = `https://github.com`;
   const localFollowingList = [];
+  const usersToUnFollow = [];
 
   /** ====== define global values ===== */
   const formGotoLogin = $("#goto-login");
@@ -560,17 +561,20 @@ $(() => {
       }
     }
 
-    console.log(usersList);
-    let targets = [];
+    console.log(usersList); 
     if (Array.isArray(usersList) && usersList.length > 0) {
-      targets = usersList.map(user => user.username).filter(username => !!username);
+       usersList.forEach(user =>  {
+         if( user.username) {
+           usersToUnFollow.push(user.username);
+         }
+       });
     }
-    if (targets.length > 0) {
-
+    if (usersToUnFollow.length > 0) {
+ 
       try {
-        responseHandler("UN_FOLLOW_FOLLOWINGS", {
+        responseHandler("UN_FOLLOW_FOLLOWING", {
           username: authorization.username,
-          targets: targets
+          targets: usersToUnFollow
         }, responseManger);
       } catch (error) {
         console.error(error);
@@ -653,11 +657,14 @@ $(() => {
 
   const listingFollowers = (payload, response) => {
     if (payload && payload.success) {
+      const localFollowersListNames = localFollowersList.map( d => d.username);
       const { data, hasMore } = payload;
       console.log(data);
       if (Array.isArray(data)) {
         data.forEach(each => {
-          localFollowersList.push(each);
+          if(! localFollowersListNames.includes(each.username)){
+            localFollowersList.push(each);
+          }
         });
       }
       const currentCount = localFollowersList.length;
@@ -695,12 +702,15 @@ $(() => {
 
 
   const listingFollowings = (payload, response) => {
-    if (payload && payload.success) {
+      const localFollowingListNames = localFollowingList.map( d => d.username);
+      if (payload && payload.success) {
       const { data, hasMore } = payload;
       console.log(data);
       if (Array.isArray(data)) {
         data.forEach(each => {
-          localFollowingList.push(each);
+          if(! localFollowingListNames.includes ( each.username)) {
+            localFollowingList.push(each);
+          }
         });
       }
       const currentCount = localFollowingList.length;
@@ -739,11 +749,38 @@ $(() => {
 
 const unFollowFollowings = (payload, response) => {
   if (payload && payload.success) {
-    const { data } = payload;
+    const { data, hasMore } = payload;
     console.log(data);
-    setLoading();
-    setOutPut(`success`);
- 
+    if (hasMore) {
+
+      if (response) {
+        response(true);
+      }
+
+      const callback = () => {
+        console.log("called callback");
+        try {
+          responseHandler("UN_FOLLOW_FOLLOWING", {
+            username: authorization.username,
+            targets: usersToUnFollow
+          });
+        } catch (error) {
+          console.error(error);
+          resolve(false);
+        }
+      }
+
+      setLoading(true, {
+        key: "PAGE_READY",
+        callback,
+        callbackKey: "UN_FOLLOW_FOLLOWING",
+      }, `un following users ...`);
+
+    } else {
+      setLoading();
+      setOutPut(`Success `);
+    }
+
   }
 }
 
@@ -803,7 +840,11 @@ const unFollowFollowings = (payload, response) => {
    */
   const followActions = async (command) => {
     const spitCommand = command.split(" ");
-
+    const loadFollowersResponse = await gotoFollowing();
+    if (!loadFollowersResponse) {
+      setOutPut("Something went wrong.");
+      return;
+    }
     if (
       !(Array.isArray(localFollowersList) && localFollowersList.length > 0)
     ) {

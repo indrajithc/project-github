@@ -273,6 +273,119 @@ $(() => {
     }
   }
 
+  const startsUnFollowingPostProcess = ( responseData, key) => {
+    console.log({ responseData });
+    
+
+    responseHandler(key, { success: true, data: responseData.data, hasMore: responseData.hasMore }, () => {
+      console.log(responseData.hasMore);
+      if (responseData.hasMore)
+        window.location.href = responseData.hasMore;
+    });
+  } 
+
+
+  const startsUnFollowing = ( targets, key ) => {
+    const body = $("body");
+    const followersList = [];
+    let hasNextPage = false;
+    let finishedHere = true;
+    if (body.length > 0) {
+      const applicationMain = body.find("main#js-pjax-container");
+      if (applicationMain.length > 0) {
+        const applicationContainer = applicationMain.find(".container-xl");
+        if (applicationContainer.length > 0 && applicationContainer.children()) {
+          const followerContainers = applicationContainer.find(".d-table");
+          if (followerContainers.length > 0) {
+            followerContainers.each(function () {
+              const followerItem = $(this);
+              if (followerItem.length > 0) {
+                if (followerItem.hasClass("d-table")) {
+                  let follower = {};
+                  try {
+                    const userImage = followerItem.find("img")[0];
+                    if (userImage) {
+                      follower.image = $(userImage).attr("src") || undefined;
+                    }
+                  } catch (err) { }
+                  try {
+                    const userName = followerItem.find("a[data-hovercard-type='user']>span")[0];
+
+                    if (userName) {
+                      follower.name = $(userName).text() || undefined;
+                    }
+                  } catch (err) { }
+                  try {
+                    const userUsername = followerItem.find("a[data-hovercard-type='user']>span")[1];
+
+                    if (userUsername) {
+                      follower.username = $(userUsername).text() || undefined;
+                    }
+                  } catch (err) { }
+                  try {
+                    const myStatus = followerItem.find("form:not([hidden='hidden']) input[type='submit']")[0];
+                    if (myStatus) {
+                      const statusValue = `${$(myStatus).val()}`.toLowerCase().trim();
+                      follower.status = statusValue === "unfollow";
+                      follower.action = follower.status ? myStatus : null;
+                    }
+                  } catch (err) { }
+                  if (follower.username) {
+                    if( Array.isArray(targets) && targets.length > 0) {
+                      console.log({targets});
+                      if( targets.includes( follower.username ) && follower.action) {
+                        console.log({ follower});
+                        finishedHere = false;
+                        if( follower.action) {
+                          console.log($(follower.action));
+                          follower.action.click();
+                        }
+                      }
+                    }
+
+                    followersList.push(follower);
+                  }
+                }
+              }
+            });
+
+          }
+        }
+
+
+        const pageAction = applicationContainer.find(".paginate-container .pagination a");
+        console.warn(pageAction);
+        if (pageAction) {
+          const nextPage = pageAction[pageAction.length - 1];
+          if (nextPage) {
+            const nextStepText = `${$(nextPage).text()}`.toLowerCase().trim();
+            if (nextStepText === "next") {
+              hasNextPage = $(nextPage).attr("href") || undefined;
+            }
+          }
+        }
+      }
+    }
+    
+    if(!finishedHere) {
+      setTimeout(()=> {
+        console.log("reloading ....");
+        startsUnFollowing(targets, key);
+      },30);
+    } else {
+        startsUnFollowingPostProcess({
+        data: followersList,
+        hasMore: hasNextPage
+      }, key);
+    }
+ 
+    return ({
+      data: followersList,
+      hasMore: hasNextPage
+    });
+  }
+
+
   const startsListing = (key) => {
     let responseData = {
       data: [],
@@ -301,7 +414,7 @@ $(() => {
     };
     let success = false;
     try {
-      responseData = listFollowingFromCurrentTab();
+      responseData = listFollowingFromCurrentTab(); 
       console.log({ responseData });
       success = true;
     } catch (error) {
@@ -314,6 +427,24 @@ $(() => {
         window.location.href = responseData.hasMore;
     });
   }
+
+  const startsUnFollowFollowingUsers = (key,targets) => {
+    let responseData = {
+      data: [],
+      hasMore: false
+    };
+    let success = false;
+    try {
+      responseData = startsUnFollowing( targets , key);
+      startsUnFollowingPostProcess(responseData, key);
+      console.log({ responseData });
+      success = true;
+    } catch (error) {
+
+    } 
+
+  }
+
 
   /**
    * This function is sued to list followers
@@ -351,10 +482,10 @@ $(() => {
   const unFollowFollowing = (payload, response, key) => {
     const currentUrl = window.location.href;
     console.log({payload});
-    if (payload) {
+    if (payload && Array.isArray( payload.targets)) {
       if (typeof response === "function") {
         response(true, currentUrl);
-        // startsListingFollowingUsers(key);
+        startsUnFollowFollowingUsers(key,  payload.targets);
       }
     }
   }
