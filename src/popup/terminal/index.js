@@ -486,6 +486,72 @@ $(() => {
     }
   }
 
+
+  /**
+   * This function is used to show followers 
+   */
+  const showFollowing = () => {
+    if (Array.isArray(localFollowingList)) {
+      const currentCount = localFollowingList.length;
+      if (currentCount > 0) {
+
+        let followersList = [];
+        if (Array.isArray(localFollowersList) && localFollowersList.length > 0) {
+          followersList = localFollowersList.map(user => user.username);
+        } else {
+          setOutPut(`
+          <span class="text-warning">followers list is empty</span>
+          `);
+        }
+
+        const users = [];
+        const localList = localFollowingList.reverse();
+        for (let o = 0; o < localList.length; o++) {
+          const current = localList[o];
+          const userImage = current ? current.image : null;
+          const userUsername = current ? current.username : null
+          const userName = (current && current.name) || userUsername;
+          const hasFollowing = !!(current && current.status);
+          const hasFollowBack = followersList.includes(userUsername);
+
+          let statusTick = `<span class="text-warning">
+          <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-check2" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+        </svg>
+        </span>`;
+
+          if (hasFollowing && hasFollowBack) {
+            statusTick = `
+            <span class="text-success">
+            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-check2-all" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" d="M12.354 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+              <path d="M6.25 8.043l-.896-.897a.5.5 0 1 0-.708.708l.897.896.707-.707zm1 2.414l.896.897a.5.5 0 0 0 .708 0l7-7a.5.5 0 0 0-.708-.708L8.5 10.293l-.543-.543-.707.707z"/>
+            </svg>
+            </span>`
+          }
+
+
+          users.push(`<span class="pl-1 pb-1 d-flex">
+          <div class="media w-100 mr-1">`+ (userImage ?
+              `<img src="${userImage}" width="33px" height="33px" class="align-self-start mr-1" alt="${userName}"> ` : "") +
+            `<div class="media-body d-flex flex-column"> 
+              <span class="pr-1 d-flex w-100 font-weight-bold">${userName} 
+              `+ statusTick + `
+              <span class="mt-auto ml-auto badge small badge-pill badge-light">${o + 1}</span>
+              </span>
+              <small><a href="${rootUrl}/${userUsername}" target="_blank">${userUsername}</a></small>
+            </div>
+          </div> 
+          </span>
+          `);
+        }
+        setOutPut(users.join(""));
+      } else {
+        setOutPut(`Sorry you don't have any followers, or update followers list by running query 'followers list'`);
+      }
+    }
+  }
+
   /**
    * This function is used to list followers
    */
@@ -631,9 +697,9 @@ $(() => {
       console.log(listFollowingResponse);
     }
 
-    // if (command.indexOf("show") > -1 || command.indexOf(" -s") > -1) {
-    //   showFollowers();
-    // }
+    if (command.indexOf("show") > -1 || command.indexOf(" -s") > -1) {
+      showFollowing();
+    }
 
     console.log(loadFollowersResponse);
   }
