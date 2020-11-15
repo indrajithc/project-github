@@ -343,7 +343,21 @@ $(() => {
       }
     }
   }
-
+ 
+  /**
+   * This function is sued to un follow following uses
+   * @param {Object} payload 
+   */
+  const unFollowFollowing = (payload, response, key) => {
+    const currentUrl = window.location.href;
+    console.log({payload});
+    if (payload) {
+      if (typeof response === "function") {
+        response(true, currentUrl);
+        // startsListingFollowingUsers(key);
+      }
+    }
+  }
 
 
 
@@ -372,6 +386,7 @@ $(() => {
         break;
       case "GOTO_FOLLOWERS":
         openFollowersPage(payload, response);
+        break;
       case "GOTO_FOLLOWING":
         openFollowingPage(payload, response);
         break;
@@ -380,6 +395,9 @@ $(() => {
         break;
       case "LIST_FOLLOWING":
         listFollowing(payload, response, key);
+        break;
+      case "UN_FOLLOW_FOLLOWING":
+        unFollowFollowing(payload, response, key);
         break;
 
 

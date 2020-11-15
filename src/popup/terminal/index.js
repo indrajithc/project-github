@@ -552,6 +552,33 @@ $(() => {
     }
   }
 
+  const doUnfollow = (usersList) => {
+    const responseManger = (o) => {
+      if (o) {
+        setLoading(true, null, message || "Unfollowing git users ...");
+        resolve(o);
+      }
+    }
+
+    console.log(usersList);
+    let targets = [];
+    if (Array.isArray(usersList) && usersList.length > 0) {
+      targets = usersList.map(user => user.username).filter(username => !!username);
+    }
+    if (targets.length > 0) {
+
+      try {
+        responseHandler("UN_FOLLOW_FOLLOWINGS", {
+          username: authorization.username,
+          targets: targets
+        }, responseManger);
+      } catch (error) {
+        console.error(error);
+        resolve(false);
+      }
+    }
+  }
+
   /**
    * This function is used to list followers
    */
@@ -571,7 +598,7 @@ $(() => {
   /**
    * This function is used to show report
    */
-  const showReport = async () => {
+  const showReport = async (unfollow = false) => {
     if (Array.isArray(localFollowingList)) {
       const currentCount = localFollowingList.length;
       if (currentCount > 0) {
@@ -590,39 +617,34 @@ $(() => {
         <span class="text-success">Unfollow these git profiles, <span class="pl-1 text-danger"> they are not following back</span></span>
         `);
 
-        console.log({
-          localFollowersList,
-          localFollowingList,
-          followersList
-        });
-
         const users = [];
         const localList = localFollowingList.reverse();
-        let index = 0;
-        for (let o = 0; o < localList.length; o++) {
-          const current = localList[o];
+        const unfollowersOnlyList = localList.filter(
+          current => !followersList.includes(current && current.username)
+        );
+        for (let o = 0; o < unfollowersOnlyList.length; o++) {
+          const current = unfollowersOnlyList[o];
           const userImage = current ? current.image : null;
           const userUsername = current ? current.username : null
           const userName = (current && current.name) || userUsername;
-          const hasFollowing = !!(current && current.status);
-          const hasFollowBack = followersList.includes(userUsername);
-          if(!hasFollowBack) {
-            index++;
-            users.push(`<span class="pl-1 pb-1 d-flex">
+          users.push(`<span class="pl-1 pb-1 d-flex">
             <div class="media w-100 mr-1">`+ (userImage ?
-                `<img src="${userImage}" width="33px" height="33px" class="align-self-start mr-1" alt="${userName}"> ` : "") +
-              `<div class="media-body d-flex flex-column"> 
+              `<img src="${userImage}" width="33px" height="33px" class="align-self-start mr-1" alt="${userName}"> ` : "") +
+            `<div class="media-body d-flex flex-column"> 
                 <span class="pr-1 d-flex w-100 font-weight-bold text-danger">${userName} 
-                <span class="ml-auto my-auto badge small badge-pill badge-danger">${index}</span>
+                <span class="ml-auto my-auto badge small badge-pill badge-danger">${o + 1}</span>
                 </span>
                 <small><a href="${rootUrl}/${userUsername}" target="_blank">${userUsername}</a></small>
               </div>
             </div> 
             </span>
-            `);
-          }
+          `);
         }
+
         setOutPut(users.join(""));
+        if( unfollow) {
+          await doUnfollow(unfollowersOnlyList);
+        }
       } else {
         setOutPut(`Sorry you don't have any followers, or update followers list by running query 'followers list'`);
       }
@@ -715,6 +737,18 @@ $(() => {
   }
 
 
+const unFollowFollowings = (payload, response) => {
+  if (payload && payload.success) {
+    const { data } = payload;
+    console.log(data);
+    setLoading();
+    setOutPut(`success`);
+ 
+  }
+}
+
+
+
   /**
    * This function is used to run followers commands
    * @param {String} command 
@@ -769,29 +803,27 @@ $(() => {
    */
   const followActions = async (command) => {
     const spitCommand = command.split(" ");
-   
+
     if (
       !(Array.isArray(localFollowersList) && localFollowersList.length > 0)
-        ) {
+    ) {
       setOutPut("Please run command 'followers list' first");
       return;
-    }  
+    }
     if (
       !(Array.isArray(localFollowingList) && localFollowingList.length > 0)
-        ) {
+    ) {
       setOutPut("Please run command 'following list' first");
       return;
     }
 
     if (command.indexOf(" report") > -1 || command.indexOf(" -r") > -1) {
-       await showReport();
+      await showReport();
     }
 
-    // if (command.indexOf(" show") > -1 || command.indexOf(" -s") > -1) {
-    //   showFollowing();
-    // }
-
-    console.log(loadFollowersResponse);
+    if (command.indexOf(" action") > -1 || command.indexOf(" -a") > -1) {
+      await showReport(true);
+    } 
   }
 
   const doTheAction = (command) => {
@@ -826,7 +858,7 @@ $(() => {
         break;
       case String(command.match(/^follow*/) && command):
         followActions(command);
-          break;
+        break;
       default:
         output = `git: ${command}: command not found`
     }
@@ -952,9 +984,9 @@ $(() => {
             case "LIST_FOLLOWING":
               isProgress.payload.callback(true);
               break;
-
-
-
+            case "UN_FOLLOW_FOLLOWING":
+              isProgress.payload.callback(true);
+              break;
           }
         }
       }
@@ -973,8 +1005,12 @@ $(() => {
       case "LIST_FOLLOWERS":
         listingFollowers(payload, response);
         break;
-      case "LIST_FOLLOWING":
-        listingFollowings(payload, response);
+        case "LIST_FOLLOWING":
+          listingFollowings(payload, response);
+          break;
+          case "UN_FOLLOW_FOLLOWING":
+            unFollowFollowings(payload, response);
+            break;
       default:
         console.log("no valid key match");
     }
