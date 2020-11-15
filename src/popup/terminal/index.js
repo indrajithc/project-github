@@ -568,6 +568,67 @@ $(() => {
     console.log(listResponse);
   };
 
+  /**
+   * This function is used to show report
+   */
+  const showReport = async () => {
+    if (Array.isArray(localFollowingList)) {
+      const currentCount = localFollowingList.length;
+      if (currentCount > 0) {
+
+        let followersList = [];
+        if (Array.isArray(localFollowersList) && localFollowersList.length > 0) {
+          followersList = localFollowersList.map(user => user.username);
+        } else {
+          setOutPut(`
+          <span class="text-warning">followers list is empty</span>
+          `);
+          return true;
+        }
+
+        setOutPut(`
+        <span class="text-success">Unfollow these git profiles, <span class="pl-1 text-danger"> they are not following back</span></span>
+        `);
+
+        console.log({
+          localFollowersList,
+          localFollowingList,
+          followersList
+        });
+
+        const users = [];
+        const localList = localFollowingList.reverse();
+        let index = 0;
+        for (let o = 0; o < localList.length; o++) {
+          const current = localList[o];
+          const userImage = current ? current.image : null;
+          const userUsername = current ? current.username : null
+          const userName = (current && current.name) || userUsername;
+          const hasFollowing = !!(current && current.status);
+          const hasFollowBack = followersList.includes(userUsername);
+          if(!hasFollowBack) {
+            index++;
+            users.push(`<span class="pl-1 pb-1 d-flex">
+            <div class="media w-100 mr-1">`+ (userImage ?
+                `<img src="${userImage}" width="33px" height="33px" class="align-self-start mr-1" alt="${userName}"> ` : "") +
+              `<div class="media-body d-flex flex-column"> 
+                <span class="pr-1 d-flex w-100 font-weight-bold text-danger">${userName} 
+                <span class="ml-auto my-auto badge small badge-pill badge-danger">${index}</span>
+                </span>
+                <small><a href="${rootUrl}/${userUsername}" target="_blank">${userUsername}</a></small>
+              </div>
+            </div> 
+            </span>
+            `);
+          }
+        }
+        setOutPut(users.join(""));
+      } else {
+        setOutPut(`Sorry you don't have any followers, or update followers list by running query 'followers list'`);
+      }
+    }
+  }
+
   const listingFollowers = (payload, response) => {
     if (payload && payload.success) {
       const { data, hasMore } = payload;
@@ -671,14 +732,12 @@ $(() => {
       console.log(listFollowersResponse);
     }
 
-    if (command.indexOf("show") > -1 || command.indexOf(" -s") > -1) {
+    if (command.indexOf(" show") > -1 || command.indexOf(" -s") > -1) {
       showFollowers();
     }
 
     console.log(loadFollowersResponse);
   }
-
-
 
   /**
    * This function is used to run following commands
@@ -697,9 +756,40 @@ $(() => {
       console.log(listFollowingResponse);
     }
 
-    if (command.indexOf("show") > -1 || command.indexOf(" -s") > -1) {
+    if (command.indexOf(" show") > -1 || command.indexOf(" -s") > -1) {
       showFollowing();
     }
+
+    console.log(loadFollowersResponse);
+  }
+
+  /**
+   * This function is used to run follow commands
+   * @param {String} command 
+   */
+  const followActions = async (command) => {
+    const spitCommand = command.split(" ");
+   
+    if (
+      !(Array.isArray(localFollowersList) && localFollowersList.length > 0)
+        ) {
+      setOutPut("Please run command 'followers list' first");
+      return;
+    }  
+    if (
+      !(Array.isArray(localFollowingList) && localFollowingList.length > 0)
+        ) {
+      setOutPut("Please run command 'following list' first");
+      return;
+    }
+
+    if (command.indexOf(" report") > -1 || command.indexOf(" -r") > -1) {
+       await showReport();
+    }
+
+    // if (command.indexOf(" show") > -1 || command.indexOf(" -s") > -1) {
+    //   showFollowing();
+    // }
 
     console.log(loadFollowersResponse);
   }
@@ -734,6 +824,9 @@ $(() => {
       case String(command.match(/^following*/) && command):
         followingActions(command);
         break;
+      case String(command.match(/^follow*/) && command):
+        followActions(command);
+          break;
       default:
         output = `git: ${command}: command not found`
     }
