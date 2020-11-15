@@ -365,6 +365,30 @@ $(() => {
     }
   });
 
+
+  const gotoFollowing = (message) => new Promise((resolve) => {
+    {
+      setLoading(true, {
+        key: "PAGE_READY",
+        callback: resolve,
+        callbackKey: "GOTO_FOLLOWING"
+      }, message || "loading following users list ...");
+      try {
+        responseHandler("GOTO_FOLLOWING", {
+          username: authorization.username
+        }, o => {
+          if (o) {
+            clearProgress();
+            setOutPut("Already in following users");
+            resolve(o);
+          }
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  });
+
   /**
    * This function is used to run profile commands
    * @param {String} command 
@@ -504,6 +528,32 @@ $(() => {
       return;
     }
 
+    // if (command.indexOf(" list") > -1 || command.indexOf(" -l") > -1) {
+    //   const listFollowersResponse = await listFollowers();
+    //   console.log(listFollowersResponse);
+    // }
+
+    // if (command.indexOf("show") > -1 || command.indexOf(" -s") > -1) {
+    //   showFollowers();
+    // }
+
+    console.log(loadFollowersResponse);
+  }
+
+
+
+  /**
+   * This function is used to run following commands
+   * @param {String} command 
+   */
+  const followingActions = async (command) => {
+    const spitCommand = command.split(" ");
+    const loadFollowersResponse = await gotoFollowing();
+    if (!loadFollowersResponse) {
+      setOutPut("Something went wrong.");
+      return;
+    }
+
     if (command.indexOf(" list") > -1 || command.indexOf(" -l") > -1) {
       const listFollowersResponse = await listFollowers();
       console.log(listFollowersResponse);
@@ -540,8 +590,11 @@ $(() => {
       case String(command.match(/^profile*/) && command):
         profileActions(command);
         break;
-      case String(command.match(/^followers*/) && command):
-        followersActions(command);
+        case String(command.match(/^followers*/) && command):
+          followersActions(command);
+          break;
+      case String(command.match(/^following*/) && command):
+        followingActions(command);
         break;
       default:
         output = `git: ${command}: command not found`
@@ -650,7 +703,22 @@ $(() => {
                 }
               });
               break;
+
+            case "GOTO_FOLLOWING":
+              responseHandler(isProgress.payload.callbackKey, {
+                username: authorization.username
+              }, o => {
+                if (o) {
+                  setOutPut("following users is ready");
+                  isProgress.payload.callback(true);
+                  clearProgress();
+                }
+              });
+              break;
             case "LIST_FOLLOWERS":
+              isProgress.payload.callback(true);
+              break;
+            case "LIST_FOLLOWING":
               isProgress.payload.callback(true);
               break;
 

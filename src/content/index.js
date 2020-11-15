@@ -104,6 +104,25 @@ $(()=> {
     }
   }
 
+  /**
+   * This function is sued to open following user lsit
+   * @param {Object} payload 
+   */
+  const openFollowingPage = (payload, response) => {
+    const currentUrl = window.location.href;
+    if(payload ) {
+      const { username } = payload;
+      const profileUrl = `${window.location.protocol}//${ window.location.host}/${username}?tab=following` ;
+      if(currentUrl.indexOf(profileUrl) === 0) {
+        if( typeof response === "function" ) {
+          response( true, currentUrl);
+        }
+      } else  {
+        response( false, currentUrl);
+        window.location.href = profileUrl;
+      }
+    }
+  }
 
   const listFollowersFromCurrentTab = () => {
     const body = $("body");
@@ -239,6 +258,8 @@ $(()=> {
         break;
       case "GOTO_FOLLOWERS": 
         openFollowersPage(payload, response);
+      case "GOTO_FOLLOWING": 
+      openFollowingPage(payload, response);
         break;
       case "LIST_FOLLOWERS": 
         listFollowers(payload, response, key);
