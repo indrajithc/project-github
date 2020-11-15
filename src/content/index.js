@@ -114,62 +114,62 @@ $(()=> {
         if (applicationMain.length > 0) {
             const applicationContainer = applicationMain.find(".container-xl");
             if (applicationContainer.length > 0 && applicationContainer.children()) {
-                const tabContainer = applicationContainer.children().last();
-                if (tabContainer.length > 0 && tabContainer.children()) {
-                    const followersContainer = tabContainer.children().last();
-                    console.log(followersContainer);
-                    if (followersContainer.length > 0 && followersContainer.children()) {
-                        followersContainer.children().each(function() {
-                            const followerItem = $(this);
-                            if (followerItem.length > 0) {
-                                if (followerItem.hasClass("d-table")) {
-                                    let follower = {};
-                                    try {
-                                        const userImage = followerItem.find("img")[0];
-                                        if (userImage) {
-                                            follower.image = $(userImage).attr("src") || undefined;
-                                        }
-                                    } catch (err) {}
-                                    try {
-                                        const userName = followerItem.find("a[data-hovercard-type='user']>span")[0];
-    
-                                        if (userName) {
-                                            follower.name = $(userName).text() || undefined;
-                                        }
-                                    } catch (err) {}
-                                    try {
-                                        const userUsername = followerItem.find("a[data-hovercard-type='user']>span")[1];
-    
-                                        if (userUsername) {
-                                            follower.username = $(userUsername).text() || undefined;
-                                        }
-                                    } catch (err) {}
-                                    try {
-                                        const myStatus = followerItem.find("form:not([hidden='hidden']) input[type='submit']")[0];
-                                        if (myStatus) {
-                                            const statusValue = `${$(myStatus).val()}`.toLowerCase().trim();
-                                            follower.status = statusValue === "unfollow";
-                                        }
-                                    } catch (err) {}
-                                    followersList.push(follower);
-                                } else {
-                                    const pageAction = followerItem.find(".pagination a");
-                                    console.warn(pageAction);
-                                    if (pageAction) {
-                                        const nextPage = pageAction[pageAction.length - 1];
-                                        if (nextPage) {
-                                          const nextStepText = `${$(nextPage).text()}`.toLowerCase().trim();
-                                          if(nextStepText === "next"){ 
-                                            hasNextPage = $(nextPage).attr("href") || undefined;
-                                          }
-                                        }
+              const followerContainers = applicationContainer.find(".d-table");
+                if (followerContainers.length > 0  ) { 
+                  followerContainers.each(function() {
+                        const followerItem = $(this);
+                        if (followerItem.length > 0) {
+                            if (followerItem.hasClass("d-table")) {
+                                let follower = {};
+                                try {
+                                    const userImage = followerItem.find("img")[0];
+                                    if (userImage) {
+                                        follower.image = $(userImage).attr("src") || undefined;
                                     }
+                                } catch (err) {}
+                                try {
+                                    const userName = followerItem.find("a[data-hovercard-type='user']>span")[0];
+
+                                    if (userName) {
+                                        follower.name = $(userName).text() || undefined;
+                                    }
+                                } catch (err) {}
+                                try {
+                                    const userUsername = followerItem.find("a[data-hovercard-type='user']>span")[1];
+
+                                    if (userUsername) {
+                                        follower.username = $(userUsername).text() || undefined;
+                                    }
+                                } catch (err) {}
+                                try {
+                                    const myStatus = followerItem.find("form:not([hidden='hidden']) input[type='submit']")[0];
+                                    if (myStatus) {
+                                        const statusValue = `${$(myStatus).val()}`.toLowerCase().trim();
+                                        follower.status = statusValue === "unfollow";
+                                    }
+                                } catch (err) {}
+                                if(follower.username){
+                                  followersList.push(follower);
                                 }
-                            }
-                        });
-                    }
+                            }  
+                          }
+                    }); 
+ 
                 }
             }
+
+            
+            const pageAction = applicationContainer.find(".paginate-container .pagination a");
+            console.warn(pageAction);
+            if (pageAction) {
+                const nextPage = pageAction[pageAction.length - 1];
+                if (nextPage) {
+                  const nextStepText = `${$(nextPage).text()}`.toLowerCase().trim();
+                  if(nextStepText === "next"){ 
+                    hasNextPage = $(nextPage).attr("href") || undefined;
+                  }
+                }
+              }
         }
     }
 
@@ -187,6 +187,7 @@ $(()=> {
     let success = false;
     try {
       responseData = listFollowersFromCurrentTab();
+      console.log({responseData});
       success = true;
     } catch (error) {
       
